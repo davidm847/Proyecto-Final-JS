@@ -1,0 +1,1543 @@
+openapi: 3.0.3
+info:
+  title: Medical Management System API
+  version: 1.0.0
+  description: |
+    API documentation for the Medical Management System backend.
+
+    This API provides endpoints for managing users, doctors, patients, appointments, and medical records.
+    Authentication is required for most endpoints using JWT tokens.
+  contact:
+    name: Medical Management System
+    email: support@medical-system.com
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:5000/api
+    description: Local development server
+  - url: https://api.medical-system.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Authentication endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Authentication
+      summary: Update current user profile
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/change-password:
+    put:
+      tags:
+        - Authentication
+      summary: Change user password
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '400':
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # User management endpoints
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users (admin only)
+      operationId: getAllUsers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum:
+              - admin
+              - doctor
+              - patient
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '403':
+          description: Forbidden - admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/stats:
+    get:
+      tags:
+        - Users
+      summary: Get user statistics (admin only)
+      operationId: getUserStats
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID (admin only)
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Users
+      summary: Update user (admin only)
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      tags:
+        - Users
+      summary: Delete user (admin only)
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /users/{id}/deactivate:
+    put:
+      tags:
+        - Users
+      summary: Deactivate user (admin only)
+      operationId: deactivateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /users/{id}/activate:
+    put:
+      tags:
+        - Users
+      summary: Activate user (admin only)
+      operationId: activateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # Doctor endpoints
+  /doctors:
+    get:
+      tags:
+        - Doctors
+      summary: Get all doctors
+      operationId: getAllDoctors
+      security: []
+      parameters:
+        - name: specialization
+          in: query
+          schema:
+            type: string
+        - name: available
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of doctors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Doctor'
+
+  /doctors/{id}:
+    get:
+      tags:
+        - Doctors
+      summary: Get doctor by ID
+      operationId: getDoctorById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Doctor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+        '404':
+          description: Doctor not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /doctors/{id}/availability:
+    get:
+      tags:
+        - Doctors
+      summary: Get doctor availability
+      operationId: getDoctorAvailability
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Doctor availability
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorAvailability'
+
+  /doctors/profile:
+    put:
+      tags:
+        - Doctors
+      summary: Update doctor profile (doctor only)
+      operationId: updateDoctorProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorProfileUpdate'
+      responses:
+        '200':
+          description: Doctor profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+
+  /doctors/availability:
+    post:
+      tags:
+        - Doctors
+      summary: Set doctor availability (doctor only)
+      operationId: setAvailability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAvailability'
+      responses:
+        '201':
+          description: Availability set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorAvailability'
+
+  /doctors/availability/me:
+    get:
+      tags:
+        - Doctors
+      summary: Get current doctor's availability
+      operationId: getAvailability
+      responses:
+        '200':
+          description: Current doctor's availability
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorAvailability'
+
+  /doctors/appointments/me:
+    get:
+      tags:
+        - Doctors
+      summary: Get current doctor's appointments
+      operationId: getDoctorAppointments
+      responses:
+        '200':
+          description: Current doctor's appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+
+  /doctors/stats/me:
+    get:
+      tags:
+        - Doctors
+      summary: Get current doctor's statistics
+      operationId: getDoctorStats
+      responses:
+        '200':
+          description: Current doctor's statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorStats'
+
+  # Appointment endpoints
+  /appointments:
+    post:
+      tags:
+        - Appointments
+      summary: Create a new appointment (patient only)
+      operationId: createAppointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppointment'
+      responses:
+        '201':
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Time slot unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Appointments
+      summary: Get appointments (filtered by user role)
+      operationId: getAppointments
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - scheduled
+              - confirmed
+              - cancelled
+              - completed
+              - no_show
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: doctor_id
+          in: query
+          schema:
+            type: integer
+        - name: patient_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+
+  /appointments/stats:
+    get:
+      tags:
+        - Appointments
+      summary: Get appointment statistics (admin only)
+      operationId: getAppointmentStats
+      responses:
+        '200':
+          description: Appointment statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentStats'
+
+  /appointments/{id}:
+    get:
+      tags:
+        - Appointments
+      summary: Get appointment by ID
+      operationId: getAppointmentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: Appointment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Appointments
+      summary: Update appointment
+      operationId: updateAppointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAppointment'
+      responses:
+        '200':
+          description: Appointment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+  /appointments/{id}/cancel:
+    put:
+      tags:
+        - Appointments
+      summary: Cancel appointment
+      operationId: cancelAppointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Appointment cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+  # Medical Records endpoints
+  /medical-records:
+    post:
+      tags:
+        - Medical Records
+      summary: Create a new medical record (doctor only)
+      operationId: createMedicalRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedicalRecord'
+      responses:
+        '201':
+          description: Medical record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+    get:
+      tags:
+        - Medical Records
+      summary: Get medical records (filtered by user role)
+      operationId: getMedicalRecords
+      parameters:
+        - name: patient_id
+          in: query
+          schema:
+            type: integer
+        - name: doctor_id
+          in: query
+          schema:
+            type: integer
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of medical records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicalRecord'
+
+  /medical-records/{id}:
+    get:
+      tags:
+        - Medical Records
+      summary: Get medical record by ID
+      operationId: getMedicalRecordById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Medical record details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+        '404':
+          description: Medical record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Medical Records
+      summary: Update medical record (doctor only)
+      operationId: updateMedicalRecord
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedicalRecord'
+      responses:
+        '200':
+          description: Medical record updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+    delete:
+      tags:
+        - Medical Records
+      summary: Delete medical record (doctor/admin only)
+      operationId: deleteMedicalRecord
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Medical record deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /medical-records/patient/{patient_id}:
+    get:
+      tags:
+        - Medical Records
+      summary: Get patient's medical history
+      operationId: getPatientMedicalHistory
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient's medical history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicalRecord'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Authentication schemas
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+        - first_name
+        - last_name
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          minLength: 6
+          example: password123
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: John
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: Doe
+        role:
+          type: string
+          enum:
+            - admin
+            - doctor
+            - patient
+          example: patient
+        phone:
+          type: string
+          example: '+1234567890'
+        date_of_birth:
+          type: string
+          format: date
+          example: '1990-01-01'
+        gender:
+          type: string
+          enum:
+            - male
+            - female
+            - other
+          example: male
+        address:
+          type: string
+          example: 123 Main St, City, State 12345
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          example: password123
+
+    UserProfileUpdate:
+      type: object
+      required:
+        - first_name
+        - last_name
+      properties:
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: John
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: Doe
+        phone:
+          type: string
+          example: '+1234567890'
+        date_of_birth:
+          type: string
+          format: date
+          example: '1990-01-01'
+        gender:
+          type: string
+          enum:
+            - male
+            - female
+            - other
+          example: male
+        address:
+          type: string
+          example: 123 Main St, City, State 12345
+
+    ChangePassword:
+      type: object
+      required:
+        - current_password
+        - new_password
+      properties:
+        current_password:
+          type: string
+          example: oldpassword123
+        new_password:
+          type: string
+          minLength: 6
+          example: newpassword123
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/User'
+
+    # User schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        role:
+          type: string
+          enum:
+            - admin
+            - doctor
+            - patient
+          example: patient
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: Doe
+        phone:
+          type: string
+          example: '+1234567890'
+        date_of_birth:
+          type: string
+          format: date
+          example: '1990-01-01'
+        gender:
+          type: string
+          enum:
+            - male
+            - female
+            - other
+          example: male
+        address:
+          type: string
+          example: 123 Main St, City, State 12345
+        is_active:
+          type: boolean
+          example: true
+        last_login:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+
+    UserStats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+          example: 100
+        active_users:
+          type: integer
+          example: 95
+        users_by_role:
+          type: object
+          properties:
+            admin:
+              type: integer
+              example: 2
+            doctor:
+              type: integer
+              example: 10
+            patient:
+              type: integer
+              example: 88
+        recent_registrations:
+          type: integer
+          example: 5
+
+    # Doctor schemas
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        license_number:
+          type: string
+          example: MD123456
+        specialization:
+          type: string
+          example: Cardiology
+        experience_years:
+          type: integer
+          example: 10
+        consultation_fee:
+          type: number
+          format: decimal
+          example: 150
+        education:
+          type: string
+          example: MD from Harvard Medical School
+        bio:
+          type: string
+          example: Experienced cardiologist with 10 years of practice
+        is_available:
+          type: boolean
+          example: true
+        user:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+
+    DoctorProfileUpdate:
+      type: object
+      properties:
+        license_number:
+          type: string
+          example: MD123456
+        specialization:
+          type: string
+          example: Cardiology
+        experience_years:
+          type: integer
+          example: 10
+        consultation_fee:
+          type: number
+          format: decimal
+          example: 150
+        education:
+          type: string
+          example: MD from Harvard Medical School
+        bio:
+          type: string
+          example: Experienced cardiologist with 10 years of practice
+        is_available:
+          type: boolean
+          example: true
+
+    DoctorAvailability:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        doctor_id:
+          type: integer
+          example: 1
+        day_of_week:
+          type: integer
+          minimum: 0
+          maximum: 6
+          example: 1
+        start_time:
+          type: string
+          format: time
+          example: '09:00'
+        end_time:
+          type: string
+          format: time
+          example: '17:00'
+        is_available:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+
+    SetAvailability:
+      type: object
+      required:
+        - day_of_week
+        - start_time
+        - end_time
+      properties:
+        day_of_week:
+          type: integer
+          minimum: 0
+          maximum: 6
+          example: 1
+        start_time:
+          type: string
+          format: time
+          example: '09:00'
+        end_time:
+          type: string
+          format: time
+          example: '17:00'
+        is_available:
+          type: boolean
+          example: true
+
+    DoctorStats:
+      type: object
+      properties:
+        total_appointments:
+          type: integer
+          example: 50
+        completed_appointments:
+          type: integer
+          example: 45
+        cancelled_appointments:
+          type: integer
+          example: 3
+        upcoming_appointments:
+          type: integer
+          example: 5
+        total_patients:
+          type: integer
+          example: 30
+        average_rating:
+          type: number
+          format: decimal
+          example: 4.5
+
+    # Appointment schemas
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        patient_id:
+          type: integer
+          example: 1
+        doctor_id:
+          type: integer
+          example: 1
+        appointment_date:
+          type: string
+          format: date
+          example: '2023-12-25'
+        appointment_time:
+          type: string
+          format: time
+          example: '10:00'
+        duration:
+          type: integer
+          example: 30
+        status:
+          type: string
+          enum:
+            - scheduled
+            - confirmed
+            - cancelled
+            - completed
+            - no_show
+          example: scheduled
+        appointment_type:
+          type: string
+          enum:
+            - consultation
+            - follow_up
+            - emergency
+            - routine_checkup
+          example: consultation
+        reason:
+          type: string
+          example: Regular checkup
+        notes:
+          type: string
+          example: Patient has been feeling chest pain
+        reminder_sent:
+          type: boolean
+          example: false
+        cancelled_by:
+          type: integer
+          example: 1
+        cancelled_at:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        cancellation_reason:
+          type: string
+          example: Patient unavailable
+        patient:
+          $ref: '#/components/schemas/User'
+        doctor:
+          $ref: '#/components/schemas/Doctor'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+
+    CreateAppointment:
+      type: object
+      required:
+        - doctor_id
+        - appointment_date
+        - appointment_time
+        - appointment_type
+      properties:
+        doctor_id:
+          type: integer
+          example: 1
+        appointment_date:
+          type: string
+          format: date
+          example: '2023-12-25'
+        appointment_time:
+          type: string
+          format: time
+          example: '10:00'
+        duration:
+          type: integer
+          example: 30
+        appointment_type:
+          type: string
+          enum:
+            - consultation
+            - follow_up
+            - emergency
+            - routine_checkup
+          example: consultation
+        reason:
+          type: string
+          example: Regular checkup
+        notes:
+          type: string
+          example: Patient has been feeling chest pain
+
+    UpdateAppointment:
+      type: object
+      properties:
+        appointment_date:
+          type: string
+          format: date
+          example: '2023-12-25'
+        appointment_time:
+          type: string
+          format: time
+          example: '10:00'
+        duration:
+          type: integer
+          example: 30
+        status:
+          type: string
+          enum:
+            - scheduled
+            - confirmed
+            - cancelled
+            - completed
+            - no_show
+          example: confirmed
+        appointment_type:
+          type: string
+          enum:
+            - consultation
+            - follow_up
+            - emergency
+            - routine_checkup
+          example: consultation
+        reason:
+          type: string
+          example: Regular checkup
+        notes:
+          type: string
+          example: Patient has been feeling chest pain
+
+    AppointmentStats:
+      type: object
+      properties:
+        total_appointments:
+          type: integer
+          example: 100
+        by_status:
+          type: object
+          properties:
+            scheduled:
+              type: integer
+              example: 20
+            confirmed:
+              type: integer
+              example: 15
+            completed:
+              type: integer
+              example: 50
+            cancelled:
+              type: integer
+              example: 10
+            no_show:
+              type: integer
+              example: 5
+        by_type:
+          type: object
+          properties:
+            consultation:
+              type: integer
+              example: 40
+            follow_up:
+              type: integer
+              example: 30
+            emergency:
+              type: integer
+              example: 20
+            routine_checkup:
+              type: integer
+              example: 10
+        today_appointments:
+          type: integer
+          example: 8
+        upcoming_appointments:
+          type: integer
+          example: 25
+
+    # Medical Record schemas
+    MedicalRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        patient_id:
+          type: integer
+          example: 1
+        doctor_id:
+          type: integer
+          example: 1
+        appointment_id:
+          type: integer
+          example: 1
+        visit_date:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        chief_complaint:
+          type: string
+          example: Chest pain
+        symptoms:
+          type: string
+          example: Sharp pain in chest, shortness of breath
+        diagnosis:
+          type: string
+          example: Mild chest strain
+        treatment_plan:
+          type: string
+          example: Rest, pain medication, follow-up in 1 week
+        medications_prescribed:
+          type: string
+          example: Ibuprofen 400mg twice daily
+        follow_up_instructions:
+          type: string
+          example: Return if symptoms worsen
+        vital_signs:
+          type: object
+          properties:
+            blood_pressure:
+              type: string
+              example: 120/80
+            heart_rate:
+              type: integer
+              example: 72
+            temperature:
+              type: number
+              example: 98.6
+            respiratory_rate:
+              type: integer
+              example: 16
+            oxygen_saturation:
+              type: integer
+              example: 98
+        lab_results:
+          type: string
+          example: Blood work normal
+        notes:
+          type: string
+          example: Patient responded well to treatment
+        next_appointment_recommended:
+          type: boolean
+          example: true
+        patient:
+          $ref: '#/components/schemas/User'
+        doctor:
+          $ref: '#/components/schemas/Doctor'
+        appointment:
+          $ref: '#/components/schemas/Appointment'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+
+    CreateMedicalRecord:
+      type: object
+      required:
+        - patient_id
+      properties:
+        patient_id:
+          type: integer
+          example: 1
+        appointment_id:
+          type: integer
+          example: 1
+        visit_date:
+          type: string
+          format: date-time
+          example: '2023-01-01T10:00:00Z'
+        chief_complaint:
+          type: string
+          example: Chest pain
+        symptoms:
+          type: string
+          example: Sharp pain in chest, shortness of breath
+        diagnosis:
+          type: string
+          example: Mild chest strain
+        treatment_plan:
+          type: string
+          example: Rest, pain medication, follow-up in 1 week
+        medications_prescribed:
+          type: string
+          example: Ibuprofen 400mg twice daily
+        follow_up_instructions:
+          type: string
+          example: Return if symptoms worsen
+        vital_signs:
+          type: object
+          properties:
+            blood_pressure:
+              type: string
+              example: 120/80
+            heart_rate:
+              type: integer
+              example: 72
+            temperature:
+              type: number
+              example: 98.6
+            respiratory_rate:
+              type: integer
+              example: 16
+            oxygen_saturation:
+              type: integer
+              example: 98
+        lab_results:
+          type: string
+          example: Blood work normal
+        notes:
+          type: string
+          example: Patient responded well to treatment
+        next_appointment_recommended:
+          type: boolean
+          example: true
+
+    # Common schemas
+    Success:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Operation completed successfully
+        success:
+          type: boolean
+          example: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid input provided
+        message:
+          type: string
+          example: The request could not be processed
+        success:
+          type: boolean
+          example: false
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 100
+        total_pages:
+          type: integer
+          example: 10
+        has_next:
+          type: boolean
+          example: true
+        has_prev:
+          type: boolean
+          example: false
