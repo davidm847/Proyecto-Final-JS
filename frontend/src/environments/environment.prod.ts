@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.medical-system.com/api',
+  apiUrl: 'https://proyecto-final-js-production.up.railway.app/api',
   appName: 'Medical Management System'
 };
