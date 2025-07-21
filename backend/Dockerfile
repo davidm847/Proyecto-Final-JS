@@ -47,18 +47,4 @@ EXPOSE $PORT
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]
 
-# Stage 4: Development image
-FROM base AS development
 
-ENV NODE_ENV=development PORT=5000
-
-# Copy dev dependencies
-COPY --from=dependencies --chown=nodeuser:nodejs /app/node_modules ./node_modules
-
-# Copy application code
-COPY --chown=nodeuser:nodejs . .
-
-USER nodeuser
-EXPOSE $PORT
-
-CMD ["npm", "run", "dev"]
