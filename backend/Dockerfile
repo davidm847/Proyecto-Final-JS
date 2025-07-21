@@ -38,7 +38,7 @@ COPY --from=dependencies --chown=nodeuser:nodejs /app/node_modules ./node_module
 COPY --chown=nodeuser:nodejs . .
 
 # Clean up unnecessary files and create logs directory
-RUN rm -rf .git .gitignore README.md Dockerfile docker-compose.yml .dockerignore scripts/initDb.js .env.example && \
+RUN rm -rf .git .gitignore README.md Dockerfile docker-compose.yml .dockerignore .env.example && \
     mkdir -p logs && chown -R nodeuser:nodejs logs
 
 USER nodeuser
