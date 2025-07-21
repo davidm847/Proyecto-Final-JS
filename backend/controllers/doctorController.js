@@ -242,12 +242,14 @@ const getDoctorAvailability = async (req, res, next) => {
     let availableSlots = availability;
     if (date) {
       const [year, month, day] = date.split("-").map(Number);
+      console.log("Parsed date:", year, month, day);
+      
       const currentDate = new Date(year, month - 1, day); // mes empieza desde 0
-
+      console.log("currentDate:", currentDate.toISOString());
+      
       const dayOfWeek = currentDate
         .toLocaleDateString("en-US", {
-          weekday: "long",
-          timeZone: "America/Lima", // o tu zona deseada
+          weekday: "long",    
         })
         .toLowerCase();
 
