@@ -235,7 +235,9 @@ const getDoctorAvailability = async (req, res, next) => {
     const availability = await DoctorAvailability.findAll({
       where: { doctor_id: id, is_available: true },
     });
-
+    
+    console.log("availability:", availability);
+    
     // If date is provided, check for existing appointments
     let availableSlots = availability;
     if (date) {
@@ -249,6 +251,8 @@ const getDoctorAvailability = async (req, res, next) => {
         })
         .toLowerCase();
 
+      console.log("dayOfWeek:", dayOfWeek);
+      
       availableSlots = availability.filter(
         (slot) => slot.day_of_week === dayOfWeek
       );
