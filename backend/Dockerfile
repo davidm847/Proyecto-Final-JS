@@ -45,6 +45,6 @@ USER nodeuser
 EXPOSE $PORT
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "node scripts/initDb.js && exec node server.js"]
+CMD ["sh", "-c", "ls -l scripts && exec node server.js"]
 
 
