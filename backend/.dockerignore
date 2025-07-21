@@ -127,5 +127,3 @@ dist/
 .env.staging
 .env.test
 
-# Scripts that shouldn't be in production
-scripts/initDb.js
